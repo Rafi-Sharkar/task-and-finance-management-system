@@ -1,0 +1,68 @@
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  EMPLOYEE
+  CLIENT
+  FINANCE
+}
+
+enum UserAccountStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+model User {
+  id                     String            @id @default(uuid())
+  fullName               String?
+  username               String            @unique
+  email                  String            @unique
+  phone                  String?           @unique
+  avatarUrl              String?
+  passwordHash           String
+  role                   UserRole
+  accountStatus          UserAccountStatus @default(PENDING)
+  isActive               Boolean           @default(true)
+  changePasswordRequired Boolean           @default(true)
+  isVerified             Boolean           @default(false)
+  isDeleted              Boolean           @default(false)
+  lastActive             DateTime?
+  lastLogin              DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  loginHistory      LoginHistory[]
+  folders           Folder[]         @relation("UserFolders")
+  documents         Document[]
+  projectsOwned     Project[]
+  projectsClient    Project[]        @relation("ClientProjects")
+  tasksCreated      Task[]           @relation("taskCreator")
+  assignments       TaskAssignment[] @relation("assignmentEmployee")
+  assignedTasks     TaskAssignment[] @relation("assignmentAssigner")
+  auditLogs         AuditLog[]
+  settings          Setting?
+  refreshTokens     RefreshToken[]
+  invoices          Invoice[]
+  documentsUploaded Document[]       @relation("shareto")
+
+  // Messages and conversations RS
+  privateConversation1 PrivateConversation[]  @relation("User1Conversations")
+  privateConversation2 PrivateConversation[]  @relation("User2Conversations")
+  privateMessage       PrivateMessage[]
+  privateMessageStatus PrivateMessageStatus[]
+
+  // Notifications RS
+  // Notification relations
+  smnotifications     SmNotification[]
+  smNotificationUsers SmNotificationUser[]
+
+  notificationToggles NotificationToggle[]
+  userNotifications   UserNotification[]
+
+  // Activity tracking
+  userSessions      UserSession[]
+  userDailyActivity UserDailyActivity[]
+
+  @@map("users")
+}

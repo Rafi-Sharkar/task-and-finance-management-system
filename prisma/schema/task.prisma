@@ -1,0 +1,26 @@
+model Task {
+  id          String           @id @default(uuid())
+  createdBy   String
+  title       String
+  deadline    DateTime?
+  priority    TaskPriority     @default(MEDIUM)
+  note        String?
+  status      TaskStatus       @default(IN_PROGRESS)
+  isDeleted   Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  creator     User             @relation("taskCreator", fields: [createdBy], references: [id])
+  assignments TaskAssignment[]
+}
+
+enum TaskPriority {
+  HIGH
+  LOW
+  MEDIUM
+}
+
+enum TaskStatus {
+  IN_PROGRESS
+  COMPLETED
+  NOT_COMPLETED
+}

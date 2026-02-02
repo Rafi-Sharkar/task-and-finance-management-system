@@ -1,0 +1,17 @@
+model AssignedProject {
+  id         String         @id @default(uuid())
+  projectId  String
+  managerId  String
+  assignedAt DateTime       @default(now())
+  status     AssignedStatus @default(IN_PROGRESS)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // project   Project  @relation(fields: [projectId], references: [id])
+}
+
+enum AssignedStatus {
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+}

@@ -1,0 +1,14 @@
+model Provision {
+  id              String        @id @default(uuid())
+  name            String
+  amount          Float
+  expectedValue   Float
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  probability     Float
+  provisionStatus PostingStatus @default(DRAFT)
+  isDeleted       Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}

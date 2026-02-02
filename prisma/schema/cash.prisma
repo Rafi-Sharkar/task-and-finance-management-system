@@ -1,0 +1,20 @@
+model Cash {
+  id           String   @id @default(uuid())
+  referenceNo  String
+  description  String?
+  cashType     CashType
+  cashIn       Decimal? @default(0) @db.Decimal(12, 2)
+  cashOut      Decimal? @default(0) @db.Decimal(12, 2)
+  totalbalance Decimal? @default(0) @db.Decimal(12, 2)
+  cashDate     DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  document Document[]
+}
+
+enum CashType {
+  CASH_IN
+  CASH_OUT
+}

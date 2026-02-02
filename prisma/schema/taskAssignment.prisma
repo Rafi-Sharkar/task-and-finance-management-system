@@ -1,0 +1,13 @@
+model TaskAssignment {
+  id          String     @id @default(uuid())
+  taskId      String
+  employeeId  String
+  assignedBy  String
+  status      TaskStatus @default(IN_PROGRESS)
+  completedAt DateTime?
+  assignedAt  DateTime   @default(now())
+
+  task     Task @relation(fields: [taskId], references: [id])
+  employee User @relation("assignmentEmployee", fields: [employeeId], references: [id])
+  assigner User @relation("assignmentAssigner", fields: [assignedBy], references: [id])
+}

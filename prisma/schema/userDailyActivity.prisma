@@ -1,0 +1,13 @@
+model UserDailyActivity {
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id")
+  date             DateTime @db.Date
+  totalDurationSec Int      @default(0) @map("total_duration_sec")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("user_daily_activity")
+}

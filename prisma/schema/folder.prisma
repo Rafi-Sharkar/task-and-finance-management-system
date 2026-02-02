@@ -1,0 +1,14 @@
+model Folder {
+  id        String   @id @default(uuid())
+  name      String
+  parentId  String?
+  createdBy String
+  isDeleted Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator   User       @relation("UserFolders", fields: [createdBy], references: [id])
+  parent    Folder?    @relation("FolderHierarchy", fields: [parentId], references: [id])
+  children  Folder[]   @relation("FolderHierarchy")
+  documents Document[]
+}

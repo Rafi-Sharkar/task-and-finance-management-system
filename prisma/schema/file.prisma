@@ -1,0 +1,18 @@
+model File {
+  id         String   @id @default(uuid())
+  documentId String?
+  url        String
+  mimeType   String
+  sizeKB     Int
+  extension  String
+  uploadedAt DateTime @default(now())
+  checksum   String?
+  isDeleted  Boolean  @default(false)
+
+  invoiceId String?  @unique
+  invoice   Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  document Document? @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}

@@ -1,0 +1,66 @@
+model Document {
+  id               String          @id @default(uuid())
+  folderId         String?
+  uploadedBy       String
+  projectId        String?
+  name             String
+  clientId         String?
+  statusByClient   ClientDocAction @default(PENDING)
+  status           DocumentStatus  @default(PENDING)
+  shareToClient    Boolean         @default(false)
+  clientShareTypes ShareTypes?
+  isSigned         Boolean         @default(false)
+  documentCateory  documentCateory @default(OTHERS)
+  isDeleted        Boolean         @default(false)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  cashId String?
+
+  folder   Folder?  @relation(fields: [folderId], references: [id])
+  uploader User     @relation(fields: [uploadedBy], references: [id])
+  client   User?    @relation("shareto", fields: [clientId], references: [id])
+  files    File[]
+  project  Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  vatReport VatReport?
+
+  // Finance Relations
+  transaction Transaction?
+  cash        Cash?        @relation(fields: [cashId], references: [id])
+
+  paymentId       String?          @unique
+  payment         Payment?         @relation(fields: [paymentId], references: [id])
+  documentClients DocumentClient[]
+
+  @@index([clientId])
+}
+
+enum DocumentStatus {
+  APPROVED
+  REJECTED
+  PENDING
+}
+
+enum ClientDocAction {
+  VIEWED
+  SIGNED
+  PENDING
+}
+
+enum ShareTypes {
+  VIEW
+  SIGN
+}
+
+enum documentCateory {
+  CLIENT_INVOICE_IN
+  ORG_INVOICE_OUT
+  PROJECT_DOC
+  TRANSACTION
+  CASH_MANAGEMENT
+  PAYMENT_PROCESS
+  ORG_OTHER_INVOICE
+  PROFIT_AND_LOSS
+  OTHERS
+}

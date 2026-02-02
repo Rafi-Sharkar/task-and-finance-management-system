@@ -1,0 +1,24 @@
+model AccrualDeferral {
+  id          String       @id @default(uuid())
+  name        String?
+  period      String?
+  type        AccrualType
+  description String
+  amount      Float
+  startDate   DateTime
+  endDate     DateTime
+  status      PostingStatus @default(DRAFT)
+  isDeleted   Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+enum AccrualType {
+  DEFERRAL
+  ACCRUAL
+}
+
+enum PostingStatus {
+  DRAFT
+  POSTED
+}

@@ -1,0 +1,29 @@
+model Project {
+  id          String        @id @unique @default(uuid())
+  clientId    String
+  createdBy   String
+  name        String
+  description String?
+  status      ProjectStatus @default(PLANNING)
+  startDate   DateTime?
+  endDate     DateTime?
+  budget      Decimal?
+  note        String?
+  isDeleted   Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  created  User      @relation(fields: [createdBy], references: [id])
+  client   User      @relation("ClientProjects", fields: [clientId], references: [id])
+  invoices Invoice[]
+
+  documents Document[]
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}

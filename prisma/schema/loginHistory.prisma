@@ -1,0 +1,13 @@
+model LoginHistory {
+  id       String   @id @default(uuid())
+  userId   String
+  ip       String
+  device   String?
+  browser  String?
+  os       String?
+  location String?
+  loginAt  DateTime @default(now())
+  success  Boolean
+
+  user User @relation(fields: [userId], references: [id])
+}

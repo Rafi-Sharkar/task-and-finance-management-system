@@ -1,0 +1,10 @@
+model FinanceSummary {
+  id           String   @id @default(uuid())
+  totalIncome  Decimal
+  totalExpense Decimal
+  totalVat     Decimal
+  netProfit    Decimal
+  summaryMonth String
+  summaryYear  Int
+  generatedAt  DateTime @default(now())
+}

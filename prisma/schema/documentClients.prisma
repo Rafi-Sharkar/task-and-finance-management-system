@@ -1,0 +1,13 @@
+model DocumentClient {
+  id         String   @id @default(uuid())
+  documentId String
+  clientId   String
+  addedAt    DateTime @default(now())
+  isRemoved  Boolean  @default(false)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, clientId])
+  @@index([clientId])
+  @@index([documentId])
+}

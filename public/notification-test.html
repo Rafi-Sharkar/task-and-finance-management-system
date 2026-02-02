@@ -1,0 +1,1432 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notification WebSocket Tester</title>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .header {
+        text-align: center;
+        color: white;
+        margin-bottom: 30px;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+        font-size: 1.1em;
+        opacity: 0.9;
+      }
+
+      .main-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .panel {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      }
+
+      .panel h2 {
+        color: #667eea;
+        margin-bottom: 20px;
+        font-size: 1.5em;
+        border-bottom: 3px solid #667eea;
+        padding-bottom: 10px;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 15px;
+      }
+
+      .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #dc3545;
+        animation: pulse 2s infinite;
+      }
+
+      .status-indicator.connected {
+        background: #28a745;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #495057;
+      }
+
+      .form-group input,
+      .form-group select {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid #e9ecef;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        margin-right: 10px;
+        margin-bottom: 10px;
+      }
+
+      .btn-primary {
+        background: #667eea;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: #218838;
+      }
+
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #c82333;
+      }
+
+      .btn-warning {
+        background: #ffc107;
+        color: #212529;
+      }
+
+      .btn-warning:hover {
+        background: #e0a800;
+      }
+
+      .btn-info {
+        background: #17a2b8;
+        color: white;
+      }
+
+      .btn-info:hover {
+        background: #138496;
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .notification-list {
+        max-height: 400px;
+        overflow-y: auto;
+        margin-top: 15px;
+      }
+
+      .notification-item {
+        background: #f8f9fa;
+        border-left: 4px solid #667eea;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+        transition: all 0.3s;
+      }
+
+      .notification-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+      }
+
+      .notification-item.unread {
+        background: #fff3cd;
+        border-left-color: #ffc107;
+      }
+
+      .notification-item h4 {
+        color: #212529;
+        margin-bottom: 5px;
+        font-size: 1em;
+      }
+
+      .notification-item p {
+        color: #6c757d;
+        font-size: 0.9em;
+        margin-bottom: 8px;
+      }
+
+      .notification-item .meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8em;
+        color: #adb5bd;
+      }
+
+      .notification-item .actions {
+        margin-top: 10px;
+      }
+
+      .notification-item .actions button {
+        padding: 5px 10px;
+        font-size: 0.8em;
+      }
+
+      .log-panel {
+        grid-column: 1 / -1;
+      }
+
+      .logs {
+        background: #212529;
+        color: #00ff00;
+        padding: 15px;
+        border-radius: 6px;
+        max-height: 300px;
+        overflow-y: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85em;
+      }
+
+      .log-entry {
+        margin-bottom: 5px;
+        padding: 5px;
+        border-bottom: 1px solid #343a40;
+      }
+
+      .log-entry.error {
+        color: #ff6b6b;
+      }
+
+      .log-entry.success {
+        color: #51cf66;
+      }
+
+      .log-entry.info {
+        color: #74c0fc;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75em;
+        font-weight: 600;
+        background: #667eea;
+        color: white;
+        margin-left: 10px;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        margin-top: 15px;
+      }
+
+      .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .stat-card h3 {
+        font-size: 2em;
+        margin-bottom: 5px;
+      }
+
+      .stat-card p {
+        font-size: 0.9em;
+        opacity: 0.9;
+      }
+
+      .action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #667eea;
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #5568d3;
+      }
+
+      @media (max-width: 1024px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .stats {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .action-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .stats {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🔔 Notification System Tester</h1>
+        <p>WebSocket Real-time Notification Testing Tool</p>
+      </div>
+
+      <div class="main-grid">
+        <!-- Connection Panel -->
+        <div class="panel">
+          <h2>🔌 Connection</h2>
+          <div class="status">
+            <div class="status-indicator" id="statusIndicator"></div>
+            <span id="statusText">Disconnected</span>
+          </div>
+
+          <div class="form-group">
+            <label>Server URL</label>
+            <input
+              type="text"
+              id="serverUrl"
+              value="http://localhost:5000"
+              placeholder="http://localhost:5000"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>JWT Token</label>
+            <input
+              type="password"
+              id="jwtToken"
+              placeholder="Paste your JWT token here"
+            />
+          </div>
+
+          <button class="btn btn-primary" onclick="connect()">Connect</button>
+          <button class="btn btn-danger" onclick="disconnect()">
+            Disconnect
+          </button>
+
+          <div class="stats">
+            <div class="stat-card">
+              <h3 id="totalNotifications">0</h3>
+              <p>Total</p>
+            </div>
+            <div class="stat-card">
+              <h3 id="unreadCount">0</h3>
+              <p>Unread</p>
+            </div>
+            <div class="stat-card">
+              <h3 id="readCount">0</h3>
+              <p>Read</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions Panel -->
+        <div class="panel">
+          <h2>⚡ Actions</h2>
+
+          <div class="form-group">
+            <label>Page</label>
+            <input
+              type="number"
+              id="page"
+              value="1"
+              min="1"
+              placeholder="Page number"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Limit</label>
+            <input
+              type="number"
+              id="limit"
+              value="20"
+              min="1"
+              max="100"
+              placeholder="Items per page"
+            />
+          </div>
+
+          <div class="action-grid">
+            <button class="btn btn-info" onclick="loadNotifications()">
+              📥 Load Notifications
+            </button>
+            <button class="btn btn-success" onclick="markAllAsRead()">
+              ✅ Mark All Read
+            </button>
+            <button class="btn btn-warning" onclick="clearLogs()">
+              🗑️ Clear Logs
+            </button>
+            <button class="btn btn-info" onclick="clearNotifications()">
+              🧹 Clear List
+            </button>
+          </div>
+
+          <h3 style="margin-top: 20px; color: #495057">Quick Test Actions</h3>
+          <p style="font-size: 0.9em; color: #6c757d; margin-bottom: 10px">
+            Create test notifications (requires backend endpoints)
+          </p>
+
+          <div class="action-grid">
+            <button class="btn btn-primary" onclick="simulateTaskCreated()">
+              📋 Task Created
+            </button>
+            <button class="btn btn-primary" onclick="simulateDocumentSigned()">
+              📄 Doc Signed
+            </button>
+            <button class="btn btn-primary" onclick="simulateInvoiceReminder()">
+              💰 Invoice Reminder
+            </button>
+            <button class="btn btn-primary" onclick="simulateProjectAssigned()">
+              🎯 Project Assigned
+            </button>
+          </div>
+        </div>
+
+        <!-- Notifications Panel -->
+        <div class="panel">
+          <h2>
+            📬 Notifications
+            <span class="badge" id="notificationBadge">0</span>
+          </h2>
+          <div class="notification-list" id="notificationList">
+            <p style="text-align: center; color: #adb5bd; padding: 20px">
+              No notifications yet. Connect and load notifications to see them
+              here.
+            </p>
+          </div>
+        </div>
+
+        <!-- Event Logs Panel -->
+        <div class="panel log-panel">
+          <h2>📊 Event Logs</h2>
+          <div class="logs" id="logs">
+            <div class="log-entry info">
+              [INFO] Ready to connect. Enter your JWT token and click Connect...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let socket = null;
+      let notifications = [];
+
+      function addLog(message, type = 'info') {
+        const logs = document.getElementById('logs');
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement('div');
+        logEntry.className = `log-entry ${type}`;
+        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logs.appendChild(logEntry);
+        logs.scrollTop = logs.scrollHeight;
+      }
+
+      function updateStats() {
+        const total = notifications.length;
+        const unread = notifications.filter((n) => !n.isRead).length;
+        const read = total - unread;
+
+        document.getElementById('totalNotifications').textContent = total;
+        document.getElementById('unreadCount').textContent = unread;
+        document.getElementById('readCount').textContent = read;
+        document.getElementById('notificationBadge').textContent = unread;
+      }
+
+      function connect() {
+        const serverUrl = document.getElementById('serverUrl').value;
+        const token = document.getElementById('jwtToken').value;
+
+        if (!token) {
+          addLog('Please enter a JWT token', 'error');
+          alert('Please enter a JWT token');
+          return;
+        }
+
+        addLog(`Connecting to ${serverUrl}/notifications...`, 'info');
+
+        try {
+          socket = io(`${serverUrl}/notifications`, {
+            auth: {
+              token: `Bearer ${token}`,
+            },
+            transports: ['websocket', 'polling'],
+          });
+
+          socket.on('connect', () => {
+            addLog('Socket connected successfully!', 'success');
+            document
+              .getElementById('statusIndicator')
+              .classList.add('connected');
+            document.getElementById('statusText').textContent =
+              `Connected (ID: ${socket.id})`;
+          });
+
+          socket.on('notification:success', (data) => {
+            addLog(`Authenticated as user: ${data.userId}`, 'success');
+          });
+
+          socket.on('notification:error', (error) => {
+            addLog(`Error: ${error.message}`, 'error');
+          });
+
+          socket.on('notification:new', (notification) => {
+            addLog(`New notification: ${notification.title}`, 'success');
+            notifications.unshift({
+              ...notification,
+              isRead: notification.isRead || false,
+            });
+            renderNotifications();
+            updateStats();
+
+            // Play sound or show browser notification
+            if (Notification.permission === 'granted') {
+              new Notification(notification.title, {
+                body: notification.message,
+                icon: '🔔',
+              });
+            }
+          });
+
+          socket.on('notification:list', (response) => {
+            addLog(
+              `Loaded ${response.data.length} notifications (Total: ${response.metadata.total})`,
+              'success',
+            );
+            notifications = response.data.map((n) => ({
+              notificationId: n.notificationId,
+              type: n.type,
+              title: n.title,
+              message: n.message,
+              meta: n.meta,
+              isRead: n.isRead,
+              createdAt: n.createdAt,
+            }));
+            renderNotifications();
+            updateStats();
+          });
+
+          socket.on('notification:unread_count', (data) => {
+            addLog(`Unread count updated: ${data.count}`, 'info');
+            document.getElementById('unreadCount').textContent = data.count;
+            document.getElementById('notificationBadge').textContent =
+              data.count;
+          });
+
+          socket.on('disconnect', () => {
+            addLog('Socket disconnected', 'error');
+            document
+              .getElementById('statusIndicator')
+              .classList.remove('connected');
+            document.getElementById('statusText').textContent = 'Disconnected';
+          });
+
+          socket.on('connect_error', (error) => {
+            addLog(`Connection error: ${error.message}`, 'error');
+          });
+        } catch (error) {
+          addLog(`Error: ${error.message}`, 'error');
+        }
+      }
+
+      function disconnect() {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+          addLog('Disconnected from server', 'info');
+        }
+      }
+
+      function loadNotifications() {
+        if (!socket || !socket.connected) {
+          addLog('Please connect first', 'error');
+          return;
+        }
+
+        const page = parseInt(document.getElementById('page').value) || 1;
+        const limit = parseInt(document.getElementById('limit').value) || 20;
+
+        addLog(
+          `Loading notifications (page: ${page}, limit: ${limit})...`,
+          'info',
+        );
+        socket.emit('notification:load', { page, limit });
+      }
+
+      function markAsRead(notificationId) {
+        if (!socket || !socket.connected) {
+          addLog('Please connect first', 'error');
+          return;
+        }
+
+        addLog(`Marking notification ${notificationId} as read...`, 'info');
+        socket.emit('notification:mark_read', { notificationId });
+
+        // Update local state
+        const notification = notifications.find(
+          (n) => n.notificationId === notificationId,
+        );
+        if (notification) {
+          notification.isRead = true;
+          renderNotifications();
+          updateStats();
+        }
+      }
+
+      function markAllAsRead() {
+        if (!socket || !socket.connected) {
+          addLog('Please connect first', 'error');
+          return;
+        }
+
+        addLog('Marking all notifications as read...', 'info');
+        socket.emit('notification:mark_all_read');
+
+        // Update local state
+        notifications.forEach((n) => (n.isRead = true));
+        renderNotifications();
+        updateStats();
+      }
+
+      function deleteNotification(notificationId) {
+        if (!socket || !socket.connected) {
+          addLog('Please connect first', 'error');
+          return;
+        }
+
+        addLog(`Deleting notification ${notificationId}...`, 'info');
+        socket.emit('notification:delete', { notificationId });
+
+        // Update local state
+        notifications = notifications.filter(
+          (n) => n.notificationId !== notificationId,
+        );
+        renderNotifications();
+        updateStats();
+      }
+
+      function renderNotifications() {
+        const container = document.getElementById('notificationList');
+
+        if (notifications.length === 0) {
+          container.innerHTML = `
+            <p style="text-align: center; color: #adb5bd; padding: 20px">
+              No notifications yet. Load notifications to see them here.
+            </p>
+          `;
+          return;
+        }
+
+        container.innerHTML = notifications
+          .map((n) => {
+            const date = new Date(n.createdAt).toLocaleString();
+            const readClass = n.isRead ? '' : 'unread';
+            return `
+            <div class="notification-item ${readClass}">
+              <h4>${n.title} ${!n.isRead ? '🆕' : ''}</h4>
+              <p>${n.message}</p>
+              <div class="meta">
+                <span>${n.type}</span>
+                <span>${date}</span>
+              </div>
+              <div class="actions">
+                ${
+                  !n.isRead
+                    ? `<button class="btn btn-success" onclick="markAsRead('${n.notificationId}')">Mark Read</button>`
+                    : ''
+                }
+                <button class="btn btn-danger" onclick="deleteNotification('${n.notificationId}')">Delete</button>
+              </div>
+            </div>
+          `;
+          })
+          .join('');
+      }
+
+      function clearLogs() {
+        document.getElementById('logs').innerHTML = '';
+        addLog('Logs cleared', 'info');
+      }
+
+      function clearNotifications() {
+        notifications = [];
+        renderNotifications();
+        updateStats();
+        addLog('Notification list cleared', 'info');
+      }
+
+      // Simulation functions (these just show how real notifications would appear)
+      function simulateTaskCreated() {
+        addLog('To test real notifications, create a task in your app', 'info');
+        alert(
+          'This is a placeholder. To test real notifications:\n\n' +
+            '1. Connect with a valid JWT token\n' +
+            '2. Create a task and assign it to employees in your app\n' +
+            '3. Watch notifications appear here in real-time!',
+        );
+      }
+
+      function simulateDocumentSigned() {
+        addLog(
+          'To test real notifications, sign a document in your app',
+          'info',
+        );
+        alert(
+          'This is a placeholder. To test real notifications:\n\n' +
+            '1. Connect with a valid JWT token (client role)\n' +
+            '2. Sign a shared document in your app\n' +
+            '3. Finance users will receive notifications!',
+        );
+      }
+
+      function simulateInvoiceReminder() {
+        addLog('To test real notifications, send an invoice reminder', 'info');
+        alert(
+          'This is a placeholder. To test real notifications:\n\n' +
+            '1. Connect with a valid JWT token (finance role)\n' +
+            '2. Click reminder button on an invoice\n' +
+            '3. Client will receive notification!',
+        );
+      }
+
+      function simulateProjectAssigned() {
+        addLog('To test real notifications, assign a project', 'info');
+        alert(
+          'This is a placeholder. To test real notifications:\n\n' +
+            '1. Connect with a valid JWT token\n' +
+            '2. Create a project and assign managers\n' +
+            '3. Assigned managers will receive notifications!',
+        );
+      }
+
+      // Request notification permission on load
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    </script>
+
+    <!-- ============================================== -->
+    <!-- FRONTEND DEVELOPER DOCUMENTATION -->
+    <!-- ============================================== -->
+
+    <div
+      class="panel"
+      style="margin-top: 30px; background: #1a1a2e; color: #eee"
+    >
+      <h2 style="color: #00d9ff; border-bottom-color: #00d9ff">
+        📚 Frontend Developer Integration Guide
+      </h2>
+
+      <div
+        style="
+          font-family: 'Courier New', monospace;
+          font-size: 14px;
+          line-height: 1.8;
+        "
+      >
+        <!-- Connection Details -->
+        <div
+          style="
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="color: #00d9ff; margin-bottom: 15px">
+            🔌 Connection Configuration
+          </h3>
+          <pre
+            style="
+              background: #0f1419;
+              padding: 15px;
+              border-radius: 5px;
+              overflow-x: auto;
+              color: #a6e22e;
+            "
+          >
+<span style="color: #66d9ef;">// WebSocket Namespace</span>
+namespace: '/notifications'
+
+<span style="color: #66d9ef;">// Full WebSocket URL</span>
+ws://localhost:5000/notifications  <span style="color: #75715e;">// Development</span>
+wss://your-domain.com/notifications  <span style="color: #75715e;">// Production</span>
+
+<span style="color: #66d9ef;">// Authentication</span>
+Authorization: Bearer YOUR_JWT_TOKEN
+          </pre>
+        </div>
+
+        <!-- React Integration -->
+        <div
+          style="
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="color: #00d9ff; margin-bottom: 15px">
+            ⚛️ React Integration Example
+          </h3>
+          <pre
+            style="
+              background: #0f1419;
+              padding: 15px;
+              border-radius: 5px;
+              overflow-x: auto;
+            "
+          >
+<span style="color: #66d9ef;">import</span> { io } <span style="color: #66d9ef;">from</span> <span style="color: #e6db74;">'socket.io-client'</span>;
+<span style="color: #66d9ef;">import</span> { useEffect, useState } <span style="color: #66d9ef;">from</span> <span style="color: #e6db74;">'react'</span>;
+
+<span style="color: #66d9ef;">function</span> <span style="color: #a6e22e;">useNotifications</span>() {
+  <span style="color: #66d9ef;">const</span> [socket, setSocket] = <span style="color: #a6e22e;">useState</span>(<span style="color: #ae81ff;">null</span>);
+  <span style="color: #66d9ef;">const</span> [notifications, setNotifications] = <span style="color: #a6e22e;">useState</span>([]);
+  <span style="color: #66d9ef;">const</span> [unreadCount, setUnreadCount] = <span style="color: #a6e22e;">useState</span>(<span style="color: #ae81ff;">0</span>);
+
+  <span style="color: #a6e22e;">useEffect</span>(() => {
+    <span style="color: #66d9ef;">const</span> token = localStorage.<span style="color: #a6e22e;">getItem</span>(<span style="color: #e6db74;">'token'</span>);
+    <span style="color: #66d9ef;">if</span> (!token) <span style="color: #66d9ef;">return</span>;
+
+    <span style="color: #75715e;">// Connect to WebSocket with namespace '/notifications'</span>
+    <span style="color: #66d9ef;">const</span> newSocket = <span style="color: #a6e22e;">io</span>(<span style="color: #e6db74;">'http://localhost:5000/notifications'</span>, {
+      auth: { token: <span style="color: #e6db74;">`Bearer </span><span style="color: #f92672;">${</span>token<span style="color: #f92672;">}</span><span style="color: #e6db74;">`</span> }
+    });
+
+    <span style="color: #75715e;">// Listen for new notifications</span>
+    newSocket.<span style="color: #a6e22e;">on</span>(<span style="color: #e6db74;">'notification:new'</span>, (notification) => {
+      setNotifications(prev => [notification, ...prev]);
+      <span style="color: #75715e;">// Show toast/alert</span>
+    });
+
+    <span style="color: #75715e;">// Listen for unread count updates</span>
+    newSocket.<span style="color: #a6e22e;">on</span>(<span style="color: #e6db74;">'notification:unread_count'</span>, ({ count }) => {
+      setUnreadCount(count);
+    });
+
+    <span style="color: #a6e22e;">setSocket</span>(newSocket);
+    
+    <span style="color: #66d9ef;">return</span> () => newSocket.<span style="color: #a6e22e;">disconnect</span>();
+  }, []);
+
+  <span style="color: #66d9ef;">const</span> <span style="color: #a6e22e;">loadNotifications</span> = (page = <span style="color: #ae81ff;">1</span>, limit = <span style="color: #ae81ff;">20</span>) => {
+    socket?.<span style="color: #a6e22e;">emit</span>(<span style="color: #e6db74;">'notification:load'</span>, { page, limit });
+  };
+
+  <span style="color: #66d9ef;">const</span> <span style="color: #a6e22e;">markAsRead</span> = (notificationId) => {
+    socket?.<span style="color: #a6e22e;">emit</span>(<span style="color: #e6db74;">'notification:mark_read'</span>, { notificationId });
+  };
+
+  <span style="color: #66d9ef;">return</span> { notifications, unreadCount, loadNotifications, markAsRead };
+}
+          </pre>
+        </div>
+
+        <!-- Vue Integration -->
+        <div
+          style="
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="color: #00d9ff; margin-bottom: 15px">
+            🟢 Vue Integration Example
+          </h3>
+          <pre
+            style="
+              background: #0f1419;
+              padding: 15px;
+              border-radius: 5px;
+              overflow-x: auto;
+            "
+          >
+<span style="color: #66d9ef;">import</span> { io } <span style="color: #66d9ef;">from</span> <span style="color: #e6db74;">'socket.io-client'</span>;
+<span style="color: #66d9ef;">import</span> { ref, onMounted, onUnmounted } <span style="color: #66d9ef;">from</span> <span style="color: #e6db74;">'vue'</span>;
+
+<span style="color: #66d9ef;">export function</span> <span style="color: #a6e22e;">useNotifications</span>() {
+  <span style="color: #66d9ef;">const</span> socket = <span style="color: #a6e22e;">ref</span>(<span style="color: #ae81ff;">null</span>);
+  <span style="color: #66d9ef;">const</span> notifications = <span style="color: #a6e22e;">ref</span>([]);
+  <span style="color: #66d9ef;">const</span> unreadCount = <span style="color: #a6e22e;">ref</span>(<span style="color: #ae81ff;">0</span>);
+
+  <span style="color: #66d9ef;">const</span> <span style="color: #a6e22e;">connect</span> = () => {
+    <span style="color: #66d9ef;">const</span> token = localStorage.<span style="color: #a6e22e;">getItem</span>(<span style="color: #e6db74;">'token'</span>);
+    
+    socket.value = <span style="color: #a6e22e;">io</span>(<span style="color: #e6db74;">'http://localhost:5000/notifications'</span>, {
+      auth: { token: <span style="color: #e6db74;">`Bearer </span><span style="color: #f92672;">${</span>token<span style="color: #f92672;">}</span><span style="color: #e6db74;">`</span> }
+    });
+
+    socket.value.<span style="color: #a6e22e;">on</span>(<span style="color: #e6db74;">'notification:new'</span>, (notification) => {
+      notifications.value.<span style="color: #a6e22e;">unshift</span>(notification);
+    });
+
+    socket.value.<span style="color: #a6e22e;">on</span>(<span style="color: #e6db74;">'notification:unread_count'</span>, ({ count }) => {
+      unreadCount.value = count;
+    });
+  };
+
+  <span style="color: #a6e22e;">onMounted</span>(connect);
+  <span style="color: #a6e22e;">onUnmounted</span>(() => socket.value?.<span style="color: #a6e22e;">disconnect</span>());
+
+  <span style="color: #66d9ef;">return</span> { notifications, unreadCount };
+}
+          </pre>
+        </div>
+
+        <!-- Angular Integration -->
+        <div
+          style="
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="color: #00d9ff; margin-bottom: 15px">
+            🅰️ Angular Integration Example
+          </h3>
+          <pre
+            style="
+              background: #0f1419;
+              padding: 15px;
+              border-radius: 5px;
+              overflow-x: auto;
+            "
+          >
+<span style="color: #66d9ef;">import</span> { Injectable } <span style="color: #66d9ef;">from</span> <span style="color: #e6db74;">'@angular/core'</span>;
+<span style="color: #66d9ef;">import</span> { io, Socket } <span style="color: #66d9ef;">from</span> <span style="color: #e6db74;">'socket.io-client'</span>;
+<span style="color: #66d9ef;">import</span> { BehaviorSubject } <span style="color: #66d9ef;">from</span> <span style="color: #e6db74;">'rxjs'</span>;
+
+@<span style="color: #a6e22e;">Injectable</span>({ providedIn: <span style="color: #e6db74;">'root'</span> })
+<span style="color: #66d9ef;">export class</span> <span style="color: #a6e22e;">NotificationService</span> {
+  <span style="color: #66d9ef;">private</span> socket: Socket;
+  <span style="color: #66d9ef;">public</span> notifications$ = <span style="color: #66d9ef;">new</span> <span style="color: #a6e22e;">BehaviorSubject</span>([]);
+  <span style="color: #66d9ef;">public</span> unreadCount$ = <span style="color: #66d9ef;">new</span> <span style="color: #a6e22e;">BehaviorSubject</span>(<span style="color: #ae81ff;">0</span>);
+
+  <span style="color: #a6e22e;">connect</span>(token: <span style="color: #66d9ef;">string</span>) {
+    <span style="color: #66d9ef;">this</span>.socket = <span style="color: #a6e22e;">io</span>(<span style="color: #e6db74;">'http://localhost:5000/notifications'</span>, {
+      auth: { token: <span style="color: #e6db74;">`Bearer </span><span style="color: #f92672;">${</span>token<span style="color: #f92672;">}</span><span style="color: #e6db74;">`</span> }
+    });
+
+    <span style="color: #66d9ef;">this</span>.socket.<span style="color: #a6e22e;">on</span>(<span style="color: #e6db74;">'notification:new'</span>, (notification) => {
+      <span style="color: #66d9ef;">const</span> current = <span style="color: #66d9ef;">this</span>.notifications$.<span style="color: #a6e22e;">value</span>;
+      <span style="color: #66d9ef;">this</span>.notifications$.<span style="color: #a6e22e;">next</span>([notification, ...current]);
+    });
+
+    <span style="color: #66d9ef;">this</span>.socket.<span style="color: #a6e22e;">on</span>(<span style="color: #e6db74;">'notification:unread_count'</span>, ({ count }) => {
+      <span style="color: #66d9ef;">this</span>.unreadCount$.<span style="color: #a6e22e;">next</span>(count);
+    });
+  }
+}
+          </pre>
+        </div>
+
+        <!-- Events Reference -->
+        <div
+          style="
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="color: #00d9ff; margin-bottom: 15px">
+            📡 WebSocket Events Reference
+          </h3>
+
+          <h4 style="color: #ffd700; margin: 15px 0 10px">
+            Client → Server Events (Emit)
+          </h4>
+          <table
+            style="width: 100%; border-collapse: collapse; margin-bottom: 20px"
+          >
+            <thead>
+              <tr style="background: #0f1419">
+                <th
+                  style="
+                    padding: 10px;
+                    text-align: left;
+                    border: 1px solid #333;
+                  "
+                >
+                  Event
+                </th>
+                <th
+                  style="
+                    padding: 10px;
+                    text-align: left;
+                    border: 1px solid #333;
+                  "
+                >
+                  Payload
+                </th>
+                <th
+                  style="
+                    padding: 10px;
+                    text-align: left;
+                    border: 1px solid #333;
+                  "
+                >
+                  Description
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>notification:load</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>{ page?: number, limit?: number }</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  Load notifications with pagination
+                </td>
+              </tr>
+              <tr style="background: #0f1419">
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>notification:mark_read</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>{ notificationId: string }</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  Mark single notification as read
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>notification:mark_all_read</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">-</td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  Mark all notifications as read
+                </td>
+              </tr>
+              <tr style="background: #0f1419">
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>notification:delete</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>{ notificationId: string }</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  Delete a notification
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h4 style="color: #ffd700; margin: 15px 0 10px">
+            Server → Client Events (Listen)
+          </h4>
+          <table style="width: 100%; border-collapse: collapse">
+            <thead>
+              <tr style="background: #0f1419">
+                <th
+                  style="
+                    padding: 10px;
+                    text-align: left;
+                    border: 1px solid #333;
+                  "
+                >
+                  Event
+                </th>
+                <th
+                  style="
+                    padding: 10px;
+                    text-align: left;
+                    border: 1px solid #333;
+                  "
+                >
+                  Payload
+                </th>
+                <th
+                  style="
+                    padding: 10px;
+                    text-align: left;
+                    border: 1px solid #333;
+                  "
+                >
+                  Description
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>notification:new</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  Notification object
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  New notification received
+                </td>
+              </tr>
+              <tr style="background: #0f1419">
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>notification:list</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>{ data: [], metadata: {} }</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  Notifications list response
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>notification:unread_count</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>{ count: number }</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  Unread count update
+                </td>
+              </tr>
+              <tr style="background: #0f1419">
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>notification:success</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>{ userId: string }</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  Connection successful
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>notification:error</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  <code>{ message: string }</code>
+                </td>
+                <td style="padding: 8px; border: 1px solid #333">
+                  Error occurred
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Notification Object Structure -->
+        <div
+          style="
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="color: #00d9ff; margin-bottom: 15px">
+            📦 Notification Object Structure
+          </h3>
+          <pre
+            style="
+              background: #0f1419;
+              padding: 15px;
+              border-radius: 5px;
+              overflow-x: auto;
+            "
+          >
+{
+  <span style="color: #e6db74;">"notificationId"</span>: <span style="color: #e6db74;">"uuid-string"</span>,
+  <span style="color: #e6db74;">"type"</span>: <span style="color: #e6db74;">"task:assigned"</span>,  <span style="color: #75715e;">// notification type</span>
+  <span style="color: #e6db74;">"title"</span>: <span style="color: #e6db74;">"New Task Assigned"</span>,
+  <span style="color: #e6db74;">"message"</span>: <span style="color: #e6db74;">"John assigned you a task: 'Fix bug'"</span>,
+  <span style="color: #e6db74;">"isRead"</span>: <span style="color: #ae81ff;">false</span>,
+  <span style="color: #e6db74;">"createdAt"</span>: <span style="color: #e6db74;">"2026-01-28T10:30:00.000Z"</span>,
+  <span style="color: #e6db74;">"meta"</span>: {
+    <span style="color: #e6db74;">"taskId"</span>: <span style="color: #e6db74;">"task-uuid"</span>,
+    <span style="color: #e6db74;">"taskTitle"</span>: <span style="color: #e6db74;">"Fix bug"</span>,
+    <span style="color: #e6db74;">"assignedBy"</span>: <span style="color: #e6db74;">"user-uuid"</span>,
+    <span style="color: #e6db74;">"assignedByName"</span>: <span style="color: #e6db74;">"John Doe"</span>,
+    <span style="color: #e6db74;">"priority"</span>: <span style="color: #e6db74;">"HIGH"</span>,
+    <span style="color: #e6db74;">"url"</span>: <span style="color: #e6db74;">"/tasks/task-uuid"</span>
+  }
+}
+          </pre>
+        </div>
+
+        <!-- Notification Types -->
+        <div
+          style="
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="color: #00d9ff; margin-bottom: 15px">
+            🏷️ Notification Types
+          </h3>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 10px;
+            "
+          >
+            <div>
+              <h4 style="color: #ffd700; margin-bottom: 8px">
+                Task Notifications
+              </h4>
+              <ul style="margin-left: 20px; line-height: 2">
+                <li><code>task:assigned</code></li>
+                <li><code>task:completed</code></li>
+                <li><code>task:updated</code></li>
+              </ul>
+            </div>
+            <div>
+              <h4 style="color: #ffd700; margin-bottom: 8px">
+                Document Notifications
+              </h4>
+              <ul style="margin-left: 20px; line-height: 2">
+                <li><code>document:uploaded</code></li>
+                <li><code>document:approved</code></li>
+                <li><code>document:rejected</code></li>
+                <li><code>document:signed</code></li>
+              </ul>
+            </div>
+            <div>
+              <h4 style="color: #ffd700; margin-bottom: 8px">
+                Invoice Notifications
+              </h4>
+              <ul style="margin-left: 20px; line-height: 2">
+                <li><code>invoice:created</code></li>
+                <li><code>invoice:reminder</code></li>
+                <li><code>invoice:paid</code></li>
+              </ul>
+            </div>
+            <div>
+              <h4 style="color: #ffd700; margin-bottom: 8px">
+                Project Notifications
+              </h4>
+              <ul style="margin-left: 20px; line-height: 2">
+                <li><code>project:assigned</code></li>
+                <li><code>project:updated</code></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Start Guide -->
+        <div
+          style="
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="color: #00d9ff; margin-bottom: 15px">
+            🚀 Quick Start Steps
+          </h3>
+          <ol style="margin-left: 20px; line-height: 2.2">
+            <li>
+              <strong>Install Socket.IO Client:</strong>
+              <pre
+                style="
+                  background: #0f1419;
+                  padding: 10px;
+                  margin: 8px 0;
+                  border-radius: 5px;
+                "
+              >
+npm install socket.io-client</pre
+              >
+            </li>
+            <li>
+              <strong>Import and Connect:</strong> Use the namespace
+              <code style="color: #ffd700">/notifications</code>
+            </li>
+            <li>
+              <strong>Authenticate:</strong> Pass JWT token in auth config with
+              <code style="color: #ffd700">Bearer</code> prefix
+            </li>
+            <li>
+              <strong>Listen for Events:</strong> Subscribe to
+              <code style="color: #ffd700">notification:new</code> and
+              <code style="color: #ffd700">notification:unread_count</code>
+            </li>
+            <li>
+              <strong>Load Notifications:</strong> Emit
+              <code style="color: #ffd700">notification:load</code> on component
+              mount
+            </li>
+            <li>
+              <strong>Handle Actions:</strong> Emit events to mark as read or
+              delete notifications
+            </li>
+          </ol>
+        </div>
+
+        <!-- Important Notes -->
+        <div
+          style="
+            background: #16213e;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+          "
+        >
+          <h3 style="color: #ff6b6b; margin-bottom: 15px">
+            ⚠️ Important Notes
+          </h3>
+          <ul style="margin-left: 20px; line-height: 2.2">
+            <li>
+              <strong>Namespace:</strong> Always connect to
+              <code style="color: #ffd700">/notifications</code> namespace, not
+              root
+            </li>
+            <li>
+              <strong>Token Format:</strong> Must include "Bearer " prefix:
+              <code style="color: #ffd700">Bearer YOUR_TOKEN</code>
+            </li>
+            <li>
+              <strong>Connection:</strong> One connection per user session
+            </li>
+            <li>
+              <strong>Disconnect:</strong> Clean up socket connection on
+              component unmount
+            </li>
+            <li>
+              <strong>Error Handling:</strong> Listen to
+              <code style="color: #ffd700">notification:error</code> for
+              auth/connection errors
+            </li>
+            <li>
+              <strong>Real-time Updates:</strong> Unread count updates
+              automatically when marking as read
+            </li>
+          </ul>
+        </div>
+
+        <!-- Testing Info -->
+        <div style="background: #16213e; padding: 20px; border-radius: 8px">
+          <h3 style="color: #00d9ff; margin-bottom: 15px">🧪 Testing</h3>
+          <p style="margin-bottom: 10px">
+            Use this page to test your implementation:
+          </p>
+          <ol style="margin-left: 20px; line-height: 2">
+            <li>Login to your app and get JWT token</li>
+            <li>Paste token in the "JWT Token" field above</li>
+            <li>Click "Connect" button</li>
+            <li>
+              Perform actions in your app (create task, upload document, etc.)
+            </li>
+            <li>Watch notifications appear in real-time on this page</li>
+          </ol>
+          <p
+            style="
+              margin-top: 15px;
+              padding: 15px;
+              background: #0f1419;
+              border-left: 4px solid #00d9ff;
+              border-radius: 5px;
+            "
+          >
+            <strong>💡 Pro Tip:</strong> Open this page in multiple browser tabs
+            with different user tokens to test role-based notifications!
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

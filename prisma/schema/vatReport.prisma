@@ -1,0 +1,46 @@
+model VatReport {
+  id            String        @id @default(uuid())
+  periodType    VatPeriodType
+  years         Int
+  period        VatPeriod
+  vatStatus     VatStatus     @default(PENDING)
+  outVat        Float?
+  inVat         Float?
+  netVat        Float?
+  jurisdictions String?
+  documentId    String?       @unique
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  document Document? @relation(fields: [documentId], references: [id])
+}
+
+enum VatPeriodType {
+  MONTHLY
+  QUARTERLY
+}
+
+enum VatPeriod {
+  JANUARY
+  FEBRUARY
+  MARCH
+  APRIL
+  MAY
+  JUNE
+  JULY
+  AUGUST
+  SEPTEMBER
+  OCTOBER
+  NOVEMBER
+  DECEMBER
+  Q1
+  Q2
+  Q3
+  Q4
+}
+
+enum VatStatus {
+  PENDING
+  SUBMITTED
+  PAID
+}

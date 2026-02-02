@@ -1,0 +1,15 @@
+model UserSession {
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  startTime     DateTime  @default(now()) @map("start_time")
+  endTime       DateTime? @map("end_time")
+  lastHeartbeat DateTime  @default(now()) @map("last_heartbeat")
+  durationSec   Int       @default(0) @map("duration_sec")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([startTime])
+  @@index([lastHeartbeat])
+  @@map("user_sessions")
+}

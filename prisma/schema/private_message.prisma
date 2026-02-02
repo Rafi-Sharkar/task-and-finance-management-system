@@ -1,0 +1,40 @@
+// Private Message RS
+model PrivateMessage {
+  id String @id @default(uuid())
+
+  content  String
+  statuses PrivateMessageStatus[]
+
+  isRead Boolean @default(false)
+
+  PrivateLastMessage PrivateConversation[] @relation("PrivateLastMessage")
+
+  conversationId String
+  conversation   PrivateConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  senderId String
+  sender   User   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  // back relation for last message
+}
+
+model PrivateMessageStatus {
+  id        String                @id @default(uuid())
+  messageId String
+  userId    String
+  status    MessageDeliveryStatus
+  updatedAt DateTime              @updatedAt
+
+  message PrivateMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+}
+
+enum MessageDeliveryStatus {
+  SENT
+  DELIVERED
+  READ
+}

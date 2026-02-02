@@ -1,0 +1,21 @@
+model NotificationToggle {
+    id                String  @id @default(uuid())
+    email             Boolean @default(true)
+    userUpdates       Boolean @default(true)
+    serviceCreate     Boolean @default(true)
+    review            Boolean @default(true)
+    post              Boolean @default(true)
+    message           Boolean @default(true)
+    Inquiry           Boolean @default(true)
+    userRegistration  Boolean @default(true)
+    Service           Boolean @default(true)
+    ProjectAssignment Boolean @default(true)
+    Payment           Boolean @default(true)
+    Finance           Boolean @default(true)
+    DocumentApproval  Boolean @default(true)
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@map("notification-toggle")
+}
