@@ -54,7 +54,7 @@ COPY --from=builder /app/public ./public
 RUN pnpm install --frozen-lockfile
 
 # Expose the port
-EXPOSE 3000
+EXPOSE 5000
 
 # Run the app
 CMD ["pnpm", "start"]
