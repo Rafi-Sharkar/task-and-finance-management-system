@@ -6,9 +6,9 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "npx nest build",
-    "dev": "npx prisma migrate dev && npx prisma generate && pnpm format:fix && pnpm ci:fix && nest start --watch",
-    "start": "npx prisma generate && npx prisma migrate deploy && node dist/src/main",
+    "build": "node api.js && npx nest build",
+    "dev": "node api.js && npx prisma migrate dev && npx prisma generate && pnpm format:fix && pnpm ci:fix && nest start --watch",
+    "start": "node api.js && npx prisma generate && npx prisma migrate deploy && node dist/src/main",
     "start:debug": "nest start --debug --watch",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
