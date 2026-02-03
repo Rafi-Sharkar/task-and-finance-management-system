@@ -27,6 +27,9 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/smartsolutions-server:latest
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/smartsolutions-server:${{ secrets.PACKAGE_VERSION }}
+            ${{ secrets.DOCKER_USERNAME }}/smartsolutions-server:latest
 
   deploy:
     name: Deploy to VPS
